@@ -1,0 +1,6 @@
+__pycache__/**
+*.png
+*.jpg
+*.h5
+*.npy
+.DS_STORE
