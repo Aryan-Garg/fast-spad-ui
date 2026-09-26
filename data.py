@@ -10,7 +10,7 @@ from malvar_he_cutler import demosaic_interp, demosaic_malvar
 class FastSpadLoader:
     """High-speed data loader optimized for interactive UI scrubbing of SPAD cubes."""
     
-    def __init__(self, file_path: str | Path, rotation: int = 0, demosaic: bool = True):
+    def __init__(self, file_path: str | Path, rotation: int = 0, demosaic: bool = True, bayer_pattern: str = 'rggb'):
         self.file_path = Path(file_path)
         self.is_h5 = self.file_path.suffix.lower() == ".h5"
         
@@ -25,6 +25,7 @@ class FastSpadLoader:
         self.width = 0
         self.total_frames = 0
         self.do_demosaic = demosaic
+        self.bayer_pattern = bayer_pattern
 
         if self.is_h5:
             self._init_h5()
@@ -114,8 +115,10 @@ class FastSpadLoader:
                 frame = np.unpackbits(frame, axis=1).astype(np.float32)
 
         frame = self._apply_rotation(frame.astype(np.float32))
+
         if self.do_demosaic:
-            frame = demosaic_malvar(torch.tensor(frame), bayer_pattern='bggr').cpu().numpy()
+            frame = demosaic_interp(torch.tensor(frame), bayer_pattern = self.bayer_pattern).cpu().numpy()
+
         return frame
 
     def get_averaged_frame(self, start_idx: int, window_size: int) -> np.ndarray:

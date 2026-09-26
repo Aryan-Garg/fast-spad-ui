@@ -1,7 +1,8 @@
 import sys
 import numpy as np
 import pyqtgraph as pg
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSlider, QLabel, QPushButton
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+                             QHBoxLayout, QSlider, QLabel, QPushButton, QFileDialog)
 from PyQt6.QtCore import Qt, QTimer
 from numba import njit
 import torch
@@ -9,15 +10,16 @@ import torch
 from data import FastSpadLoader
 
 class SpadScrubberApp(QMainWindow):
-    def __init__(self, path_to_cube):
+    def __init__(self, path_to_cube, demosaic: bool = False, rotation: int = 0, bpliteral: str = 'rggb'):
         super().__init__()
-        self.setWindowTitle("Super-Fast SPAD Cube Scrubber")
-        self.setGeometry(100, 100, 1100, 700)
+        self.setWindowTitle("Fast SPAD Cube Visualizer")
+        self.setGeometry(100, 100, 1100, 750)
 
         self.loader = FastSpadLoader(
             spad_path, 
-            rotation=270, 
-            demosaic=False
+            rotation=rotation, 
+            demosaic=demosaic,
+            bayer_pattern=bpliteral
         )
         self.total_frames = self.loader.total_frames
         self.current_frame_idx = 0
@@ -148,7 +150,9 @@ class SpadScrubberApp(QMainWindow):
 
 if __name__ == "__main__":
     spad_path = "/media/agarg54/ExtremeSSD/ubicam_afterlight/luther.0007/data.ubi.h5"
+    
     app = QApplication(sys.argv)
-    window = SpadScrubberApp(spad_path)
+    window = SpadScrubberApp(spad_path, demosaic=True, rotation=270, bpliteral='rgbg')
     window.show()
+    
     sys.exit(app.exec())

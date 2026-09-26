@@ -7,7 +7,7 @@ from jaxtyping import Float
 from torch import nn, Tensor
 from torch.nn import functional as F
 
-BayerPatternLiteral = Literal["gray", "grey", "rggb", "bggr", "grbg", "gbrg"]
+BayerPatternLiteral = Literal["gray", "grey", "rggb", "bggr", "grbg", "gbrg", "rgbg"]
 
 
 class MalvarHeCutlerDemosaic(nn.Module):
@@ -119,10 +119,12 @@ class MalvarHeCutlerDemosaic(nn.Module):
                 self.register_buffer("index_rgb", torch.roll(rggb_rgb_index, 1, -1))
                 self.register_buffer("index_y", torch.roll(rggb_y_index, 1, -1))
                 self.register_buffer("norm_y_map", torch.roll(rggb_norm_map, 1, -1))
+
             elif self.bayer_pattern == "gbrg":
                 self.register_buffer("index_rgb", torch.roll(rggb_rgb_index, 1, -2))
                 self.register_buffer("index_y", torch.roll(rggb_y_index, 1, -2))
                 self.register_buffer("norm_y_map", torch.roll(rggb_norm_map, 1, -2))
+
 
         self.register_buffer("cached_index_rgb", None, persistent=False)
         self.register_buffer("cached_index_y", None, persistent=False)
@@ -251,7 +253,14 @@ def demosaic_interp(
     :returns: Demosaiced RGB image ``(H, W, 3)``.
     """
     h, w = img.shape
-    r_ch, (gr_ch, gb_ch), b_ch = _BAYER_CHANNEL_MAP[bayer_pattern.lower()]
+    pattern = bayer_pattern.lower()
+
+    if pattern == "rgbg":
+        # Based on [3, 1, 0, 2] -> [R, G, B, G]
+        r_ch, gr_ch, gb_ch, b_ch = 3, 1, 2, 0
+    else:
+        # Fallback to the original mapping for standard Bayer patterns
+        r_ch, (gr_ch, gb_ch), b_ch = _BAYER_CHANNEL_MAP[pattern]
 
     x = img.float().unsqueeze(0).unsqueeze(0)
     sub = F.pixel_unshuffle(x, 2)  # (1, 4, H/2, W/2)
